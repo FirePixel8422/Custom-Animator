@@ -2,15 +2,12 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(MonoBehaviour), true)]
-public class InspectorButtonEditor : Editor
-{
-    public override void OnInspectorGUI()
-    {
-        DrawDefaultInspector();
 
-        MonoBehaviour mono = (MonoBehaviour)target;
-        MethodInfo[] methods = mono.GetType().GetMethods(
+public static class InspectorButtonDrawer
+{
+    public static void Draw(object obj)
+    {
+        MethodInfo[] methods = obj.GetType().GetMethods(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         foreach (MethodInfo method in methods)
@@ -26,9 +23,7 @@ public class InspectorButtonEditor : Editor
                 : button.Label;
 
             if (GUILayout.Button(label))
-            {
-                method.Invoke(mono, null);
-            }
+                method.Invoke(obj, null);
         }
     }
 }
