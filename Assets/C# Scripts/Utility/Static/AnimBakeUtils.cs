@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using UnityEngine;
-
+﻿using UnityEngine;
 
 
 /// <summary>
@@ -8,52 +6,24 @@ using UnityEngine;
 /// </summary>
 public static class AnimBakeUtils
 {
-    public static void Bake(AnimationClip clip, GameObject obj, int frameRate, out BakedAnimClip bakedClip)
+    public static void Bake(AnimationClip clip, GameObject obj, Transform[] transforms, int frameRate, out BakedAnimClip bakedClip)
     {
-        int trackCount = GetRecursiveChildCount(obj.transform);
-        int frameCount = Mathf.FloorToInt(clip.length / frameRate);
+        int trackCount = transforms.Length;
+        int frameCount = Mathf.CeilToInt(clip.length * frameRate);
 
-        bakedClip = new BakedAnimClip(trackCount, frameCount);
+        DebugLogger.Log($">>Baking<< clip length: {clip.length}, frameRate: {frameRate}, tracks: {trackCount}, frames: {frameCount}");
 
-        for (int i = 0; i < frameCount; i++)
+        bakedClip = new BakedAnimClip(trackCount, frameCount, clip.length / frameCount);
+
+        for (int frameId = 0; frameId < frameCount; frameId++)
         {
-            float t = i / frameCount;
+            float t = (float)frameId / frameCount * clip.length;
             clip.SampleAnimation(obj, t);
+
+            bakedClip.WriteTransformationData(transforms, frameCount, frameId);
         }
 
-    }
-
-    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //
-    //
-    //
-    //
-    //
-    //
-    private static int GetRecursiveChildCount(Transform root)
-    {
-        int count = 0;
-
-        for (int i = 0; i < root.childCount; i++)
-        {
-            Transform child = root.GetChild(i);
-
-            count += 1;
-            count += GetRecursiveChildCount(child);
-        }
-
-        return count;
-    }
-
-    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //
-    //
-    //
-    //
-    //
-    //
-    private static void StoreTransformData(GameObject obj)
-    {
-
+        // Reset
+        clip.SampleAnimation(obj, 0);
     }
 }

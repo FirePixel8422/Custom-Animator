@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 
 namespace Fire_Pixel.Utility
@@ -19,8 +21,6 @@ namespace Fire_Pixel.Utility
         private static event Action LateUpdate;
         private static event Action FixedUpdate;
 
-        private static event Action NetworkTick;
-
         private static event Action LateDestroy;
         private static event Action LateApplicationQuit;
 
@@ -33,10 +33,25 @@ namespace Fire_Pixel.Utility
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+            Reset();
+
             CallbackRunnerInstance gameManager = new GameObject(">>UpdateScheduler<<").AddComponent<CallbackRunnerInstance>();
             gameManager.Init();
 
             GameObject.DontDestroyOnLoad(gameManager.gameObject);
+        }
+        public static void Reset()
+        {
+            Update = null;
+            LateUpdate = null;
+            FixedUpdate = null;
+
+            LateDestroy = null;
+            LateApplicationQuit = null;
+
+            delayedCallbacks?.Clear();
+            callbackReferences?.Clear();
+            quitting = false;
         }
 
 
@@ -142,40 +157,6 @@ namespace Fire_Pixel.Utility
         #endregion
 
 
-        #region void NetworkTick
-
-        /// <summary>
-        /// Register a method to call every frame like NetworkTick()
-        /// </summary>
-        public static void RegisterNetworkTick(Action action)
-        {
-            NetworkTick += action;
-        }
-        /// <summary>
-        /// Unregister a registerd method for NetworkTick()
-        /// </summary>
-        public static void UnRegisterNetworkTick(Action action)
-        {
-            NetworkTick -= action;
-        }
-        /// <summary>
-        /// Register or Unregister a method for NetworkTick() based on bool <paramref name="register"/>
-        /// </summary>
-        public static void ManageNetworkTick(Action action, bool register)
-        {
-            if (register)
-            {
-                RegisterNetworkTick(action);
-            }
-            else
-            {
-                UnRegisterNetworkTick(action);
-            }
-        }
-
-        #endregion
-
-
         public static void CreateLateDestroyCallback(Action action)
         {
             LateDestroy += action;
@@ -270,11 +251,6 @@ namespace Fire_Pixel.Utility
             {
                 Instance = this;
                 StartCoroutine(UpdateLoop());
-            }
-
-            private void InvokeNetworkTick()
-            {
-                NetworkTick?.Invoke();
             }
             private IEnumerator UpdateLoop()
             {
