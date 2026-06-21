@@ -5,8 +5,8 @@ using System;
 [Flags]
 public enum TransformationFlags : byte
 {
-    None = 0,
-    Position = 1,
-    Rotation = 2,
-    Scale = 4,
+    None = 1,
+    Position = 2,
+    Rotation = 4,
+    Scale = 8,
 }

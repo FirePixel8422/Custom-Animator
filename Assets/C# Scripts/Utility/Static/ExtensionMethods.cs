@@ -635,4 +635,35 @@ public static class ExtensionMethods
         action = actionAsset.FindAction(actionName);
         return action != null;
     }
+
+    public static List<Transform> GetChildrenRecursively(this Transform trans, bool includeSelf = false)
+    {
+        List<Transform> result = new List<Transform>();
+
+        void Walk(Transform t)
+        {
+            result.Add(t);
+
+            int childCount = t.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                Walk(t.GetChild(i));
+            }
+        }
+
+        if (includeSelf)
+        {
+            Walk(trans);
+        }
+        else
+        {
+            int childCount = trans.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                Walk(trans.GetChild(i));
+            }
+        }
+
+        return result;
+    }
 }

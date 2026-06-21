@@ -9,7 +9,7 @@ public class BakedAnimClip
     // One Track for every Bone/GameObject in the animation
     public BakedAnimTrack[] Tracks;
     public float FrameDuration;
-    public float FrameCount;
+    public int FrameCount;
 
     // All transformation data for all tracks, packed into one array
     public float3[] Positions;
@@ -24,34 +24,34 @@ public class BakedAnimClip
         Tracks = new BakedAnimTrack[trackCount];
         for (int i = 0; i < trackCount; i++)
         {
-            Tracks[i].Flags = (TransformationFlags)255;
+            Tracks[i].Flags = TransformationFlags.Position | TransformationFlags.Rotation | TransformationFlags.Scale;
             Tracks[i].FrameOffset = frameCount * i;
         }
 
-        int track_X_FrameCount = trackCount * frameCount;
+        int maxArrayLength = trackCount * frameCount;
 
-        Positions = new float3[track_X_FrameCount];
-        Rotations = new quaternion[track_X_FrameCount];
-        Scales = new float3[track_X_FrameCount];
+        Positions = new float3[maxArrayLength];
+        Rotations = new quaternion[maxArrayLength];
+        Scales = new float3[maxArrayLength];
 
         FrameDuration = frameDuration;
         FrameCount = frameCount;
     }
 
     /// <summary>
-    /// Write transformations from current frameId into baked anim arrays
+    /// Bake (Write) transformations from current frameId into baked anim arrays
     /// </summary>
-    public void WriteTransformationData(Transform[] transforms, int frameCount, int frameId)
+    public void BakeTransformationData(Transform[] transforms, int frameCount, int frameId)
     {
         int trackCount = TrackCount;
-        for (int trackId = 0; trackId < trackCount; trackId++)
+        for (int i = 0; i < trackCount; i++)
         {
-            int transformationIndex = trackId * frameCount + frameId;
+            int transformationIndex = i * frameCount + frameId;
 
-            transforms[trackId].GetLocalPositionAndRotation(out Vector3 pos, out Quaternion rot);
+            transforms[i].GetLocalPositionAndRotation(out Vector3 pos, out Quaternion rot);
             Positions[transformationIndex] = pos;
             Rotations[transformationIndex] = rot;
-            Scales[transformationIndex] = transforms[trackId].localScale;
+            Scales[transformationIndex] = transforms[i].localScale;
         }
     }
 
@@ -63,8 +63,8 @@ public class BakedAnimClip
         int trackCount = TrackCount;
         for (int i = 0; i < trackCount; i++)
         {
-            int transformationIndexA = Tracks[i].FrameOffset + (int)(frameId);
-            int transformationIndexB = Tracks[i].FrameOffset + frameId >= FrameCount - 1 ? 0 : (int)math.ceil(frameId);
+            int transformationIndexA = Tracks[i].FrameOffset + (int)frameId;
+            int transformationIndexB = Tracks[i].FrameOffset + (frameId >= FrameCount - 1 ? 0 : (int)frameId + 1);
             float t = frameId - (int)frameId;
             Transform transform = transforms[i];
 
@@ -98,9 +98,9 @@ public class BakedAnimClip
                     transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
                     break;
 
-                // TransformationFlags.Position | TransformationFlags.Rotation | TransformationFlags.Scale
-                case (TransformationFlags)255:
-                    DebugLogger.Log(transformationIndexA + ", " + transformationIndexA);
+                case TransformationFlags.Position | TransformationFlags.Rotation | TransformationFlags.Scale:
+
+                    //DebugLogger.Log(math.lerp(transformationIndexA, transformationIndexB, t));
 
                     transform.SetLocalPositionAndRotation(
                         math.lerp(Positions[transformationIndexA], Positions[transformationIndexB], t),

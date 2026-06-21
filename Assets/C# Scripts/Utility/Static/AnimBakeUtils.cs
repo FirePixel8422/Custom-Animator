@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using Fire_Pixel.Utility;
+using System.Data.Common;
+using UnityEngine;
 
 
 /// <summary>
@@ -15,12 +17,13 @@ public static class AnimBakeUtils
 
         bakedClip = new BakedAnimClip(trackCount, frameCount, clip.length / frameCount);
 
-        for (int frameId = 0; frameId < frameCount; frameId++)
+        for (int i = 0; i < frameCount; i++)
         {
-            float t = (float)frameId / frameCount * clip.length;
+            float t = (float)i / frameCount * clip.length;
+
             clip.SampleAnimation(obj, t);
 
-            bakedClip.WriteTransformationData(transforms, frameCount, frameId);
+            bakedClip.BakeTransformationData(transforms, frameCount, i);
         }
 
         // Reset
