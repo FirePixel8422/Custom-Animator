@@ -4,40 +4,39 @@
 /// <summary>
 /// MB class responsible for baking <see cref="AnimationClip"/>'s into <see cref="BakedAnimSO"/>'s
 /// </summary>
+[RequireComponent(typeof(CustomAnimator))]
 public class CustomAnimBaker : MonoBehaviour
 {
 #if UNITY_EDITOR
-    [SerializeField] private BakedAnimSO bakedAnimSO;
-    [SerializeField] private AnimationClip targetClip;
-    [SerializeField] private GameObject targetObj;
-    [Range(1, 120)]
-    [SerializeField] private int frameRate;
+    [SerializeField, InlineSO] private BakedAnimSO bakedAnimSO;
+    public BakedAnimSO BakedAnimSO => bakedAnimSO;
 
-    [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
+    [SerializeField, EditorReadOnly] private CustomAnimator anim;
 
 
-    private void OnValidate()
+    private void Reset()
     {
-        if (targetObj == null) return;
-
-        targetTransforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
+        anim = GetComponent<CustomAnimator>();
     }
 
-    [InspectorButton("Bake")]
+    [InspectorButton("[Bake]")]
     private void Bake()
     {
-        if (bakedAnimSO == null || targetClip == null || targetObj == null)
+        if (anim == null || bakedAnimSO == null || bakedAnimSO.TargetClip == null)
         {
             DebugLogger.LogWarning("Cant bake animation without targetAnimSO, targetClip and targetObj, skipping...");
             return;
         }
 
-        AnimBakeUtils.Bake(targetClip, targetObj, targetTransforms, frameRate, out bakedAnimSO.Value);
+        AnimBakeUtils.Bake(bakedAnimSO.TargetClip, this.anim.TargetObj, this.anim.TargetTransforms, bakedAnimSO.FrameRate, out bakedAnimSO.Value);
+        anim.ReloadAnimation();
+    }
 
-        if (TryGetComponent(out CustomAnimator anim))
-        {
-            anim.ReloadAnimation();
-        }
+    [InspectorButton("[Reload]")]
+    private void Reload()
+    {
+        DebugLogger.Log($"Reloaded Custom Animation Baker on '{name}'");
+        Reset();
     }
 #endif
 }

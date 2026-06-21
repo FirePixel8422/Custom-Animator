@@ -39,9 +39,9 @@ public class BakedAnimClip
     }
 
     /// <summary>
-    /// Bake (Write) transformations from current frameId into baked anim arrays
+    /// Record (Bake/Write) transformations from current frameId into baked anim arrays
     /// </summary>
-    public void BakeTransformationData(Transform[] transforms, int frameCount, int frameId)
+    public void RecordTransformationData(Transform[] transforms, int frameCount, int frameId)
     {
         int trackCount = TrackCount;
         for (int i = 0; i < trackCount; i++)

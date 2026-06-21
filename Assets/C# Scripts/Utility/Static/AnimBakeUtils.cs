@@ -1,5 +1,4 @@
-﻿using Fire_Pixel.Utility;
-using System.Data.Common;
+﻿using System.Diagnostics;
 using UnityEngine;
 
 
@@ -13,20 +12,24 @@ public static class AnimBakeUtils
         int trackCount = transforms.Length;
         int frameCount = Mathf.CeilToInt(clip.length * frameRate);
 
-        DebugLogger.Log($">>Baking<< clip length: {clip.length}, frameRate: {frameRate}, tracks: {trackCount}, frames: {frameCount}");
+        Stopwatch sw = Stopwatch.StartNew();
+        DebugLogger.Log($">>Baking<< Clip length: {clip.length}s, tracks (transforms): {trackCount}, frameRate: {frameRate}, frames: {frameCount}");
 
         bakedClip = new BakedAnimClip(trackCount, frameCount, clip.length / frameCount);
 
+        // Play animation and record it
         for (int i = 0; i < frameCount; i++)
         {
             float t = (float)i / frameCount * clip.length;
 
             clip.SampleAnimation(obj, t);
 
-            bakedClip.BakeTransformationData(transforms, frameCount, i);
+            bakedClip.RecordTransformationData(transforms, frameCount, i);
         }
 
         // Reset
         clip.SampleAnimation(obj, 0);
+
+        DebugLogger.Log($"Bake Finished, took: {sw.ElapsedTicks} ticks ({sw.ElapsedMilliseconds} ms)");
     }
 }

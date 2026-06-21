@@ -1,6 +1,7 @@
 ﻿using Fire_Pixel.Utility;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -636,34 +637,37 @@ public static class ExtensionMethods
         return action != null;
     }
 
+    /// <summary>
+    /// Get all transform children and all their children and so forth of this transform.
+    /// </summary>
     public static List<Transform> GetChildrenRecursively(this Transform trans, bool includeSelf = false)
     {
-        List<Transform> result = new List<Transform>();
-
-        void Walk(Transform t)
-        {
-            result.Add(t);
-
-            int childCount = t.childCount;
-            for (int i = 0; i < childCount; i++)
-            {
-                Walk(t.GetChild(i));
-            }
-        }
+        List<Transform> results = new List<Transform>();
 
         if (includeSelf)
         {
-            Walk(trans);
+            Walk(results, trans);
         }
         else
         {
             int childCount = trans.childCount;
             for (int i = 0; i < childCount; i++)
             {
-                Walk(trans.GetChild(i));
+                Walk(results, trans.GetChild(i));
             }
         }
 
-        return result;
+        return results;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Walk(List<Transform> results, Transform t)
+    {
+        results.Add(t);
+
+        int childCount = t.childCount;
+        for (int i = 0; i < childCount; i++)
+        {
+            Walk(results, t.GetChild(i));
+        }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using UnityEngine;
+﻿using UnityEngine;
 
 
 
@@ -9,32 +7,42 @@ public class CustomAnimator : UpdateMonoBehaviour
     [SerializeField] private BakedAnimSO bakedAnimSO;
     [SerializeField] private GameObject targetObj;
 
-    [SerializeField, EditorReadOnly] private Transform[] transforms;
+    [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
     [SerializeField, EditorReadOnly] private BakedAnimClip currentClip;
 
     [SerializeField, EditorReadOnly] private float frameId;
     [SerializeField, EditorReadOnly] private bool isPlaying;
+
+#if UNITY_EDITOR
+    public GameObject TargetObj => targetObj;
+    public Transform[] TargetTransforms => targetTransforms;
+#endif
 
 
     private void OnValidate()
     {
         if (bakedAnimSO == null || targetObj == null) return;
 
+        if (TryGetComponent(out CustomAnimBaker animBaker))
+        {
+            bakedAnimSO = animBaker.BakedAnimSO;
+        }
+
         ReloadAnimation();
 
-        transforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
+        targetTransforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
     }
     public void ReloadAnimation()
     {
         currentClip = bakedAnimSO.Value;
     }
 
-    [InspectorButton("Play")]
+    [InspectorButton("[Play]")]
     private void Play()
     {
         isPlaying = true;
     }
-    [InspectorButton("Stop")]
+    [InspectorButton("[Stop]")]
     private void Stop()
     {
         isPlaying = false;
@@ -50,6 +58,6 @@ public class CustomAnimator : UpdateMonoBehaviour
         frameId += Time.deltaTime / currentClip.FrameDuration;
         frameId %= currentClip.FrameCount;
 
-        currentClip.ApplyToTargetTransforms(transforms, frameId);
+        currentClip.ApplyToTargetTransforms(targetTransforms, frameId);
     }
 }
