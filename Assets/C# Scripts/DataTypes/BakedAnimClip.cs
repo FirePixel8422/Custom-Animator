@@ -4,7 +4,7 @@ using UnityEngine;
 
 
 [System.Serializable]
-public class BakedAnimClip
+public struct BakedAnimClip
 {
     // One Track for every Bone/GameObject in the animation
     public BakedAnimTrack[] Tracks;

@@ -4,7 +4,7 @@
 
 public class CustomAnimator : UpdateMonoBehaviour
 {
-    [SerializeField] private BakedAnimSO bakedAnimSO;
+    public BakedAnimSO BakedAnimSO;
     [SerializeField] private GameObject targetObj;
 
     [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
@@ -21,12 +21,7 @@ public class CustomAnimator : UpdateMonoBehaviour
 
     private void OnValidate()
     {
-        if (bakedAnimSO == null || targetObj == null) return;
-
-        if (TryGetComponent(out CustomAnimBaker animBaker))
-        {
-            bakedAnimSO = animBaker.BakedAnimSO;
-        }
+        if (BakedAnimSO == null || targetObj == null) return;
 
         ReloadAnimation();
 
@@ -34,7 +29,7 @@ public class CustomAnimator : UpdateMonoBehaviour
     }
     public void ReloadAnimation()
     {
-        currentClip = bakedAnimSO.Value;
+        currentClip = BakedAnimSO.Value;
     }
 
     [InspectorButton("[Play]")]

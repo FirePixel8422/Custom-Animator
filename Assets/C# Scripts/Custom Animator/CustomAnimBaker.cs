@@ -9,7 +9,7 @@ public class CustomAnimBaker : MonoBehaviour
 {
 #if UNITY_EDITOR
     [SerializeField, InlineSO] private BakedAnimSO bakedAnimSO;
-    public BakedAnimSO BakedAnimSO => bakedAnimSO;
+    private BakedAnimSO prevBakedAnimSO;
 
     [SerializeField, EditorReadOnly] private CustomAnimator anim;
 
@@ -17,6 +17,15 @@ public class CustomAnimBaker : MonoBehaviour
     private void Reset()
     {
         anim = GetComponent<CustomAnimator>();
+    }
+    private void OnValidate()
+    {
+        if (prevBakedAnimSO != bakedAnimSO && TryGetComponent(out CustomAnimator anim))
+        {
+            anim.BakedAnimSO = bakedAnimSO;
+            anim.ReloadAnimation();
+        }
+        prevBakedAnimSO = bakedAnimSO;
     }
 
     [InspectorButton("[Bake]")]
