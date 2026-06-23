@@ -101,6 +101,9 @@ public sealed class MessageIfDrawer : PropertyDrawer
             case ComparisonType.Equal:
                 return Mathf.Approximately(value, attr.Value);
 
+            case ComparisonType.NotEqual:
+                return !Mathf.Approximately(value, attr.Value);
+
             case ComparisonType.GreaterThanOrEqual:
                 return value >= attr.Value;
 

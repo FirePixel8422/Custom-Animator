@@ -20,6 +20,8 @@ public class CustomAnimBaker : MonoBehaviour
     }
     private void OnValidate()
     {
+        if (bakedAnimSO == null) return;
+
         if (prevBakedAnimSO != bakedAnimSO && TryGetComponent(out CustomAnimator anim))
         {
             anim.BakedAnimSO = bakedAnimSO;

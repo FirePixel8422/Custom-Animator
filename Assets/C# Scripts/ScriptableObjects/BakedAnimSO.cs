@@ -9,9 +9,11 @@ public class BakedAnimSO : ScriptableObject
     [field: SerializeField] public AnimationClip TargetClip { get; private set; }
 
 
-    [field: WarningIf(ComparisonType.LessThanOrEqual, 0, "FrameRate has to be higher then 0")]
+    [field: ShowIf(nameof(TargetClip))]
+    [field: ErrorIf(ComparisonType.LessThanOrEqual, 0, "FrameRate has to be higher then 0")]
     [field: SerializeField] public int FrameRate { get; private set; }
 #endif
 
+    [Rename("Baked Animation Clip")]
     [EditorReadOnly] public BakedAnimClip Value;
 }

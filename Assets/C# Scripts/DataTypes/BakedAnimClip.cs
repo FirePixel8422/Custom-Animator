@@ -2,7 +2,6 @@
 using UnityEngine;
 
 
-
 [System.Serializable]
 public struct BakedAnimClip
 {
@@ -15,7 +14,7 @@ public struct BakedAnimClip
     public float3[] Positions;
     public quaternion[] Rotations;
     public float3[] Scales;
-    public int TrackCount => Tracks.Length;
+    public readonly int TrackCount => Tracks.Length;
 
 
 
@@ -108,7 +107,6 @@ public struct BakedAnimClip
                     transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
                     break;
 
-                case TransformationFlags.None:
                 default:
                     return;
             }
