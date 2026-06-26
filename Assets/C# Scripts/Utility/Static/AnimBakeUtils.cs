@@ -32,4 +32,11 @@ public static class AnimBakeUtils
 
         DebugLogger.Log($"Bake Finished, took: {sw.ElapsedTicks} ticks ({sw.ElapsedMilliseconds} ms)");
     }
+
+    private static void OptimizeBakedAnimation(int frameCount)
+    {
+        DebugLogger.Log($">>Optimizing baked clip<<");
+
+
+    }
 }

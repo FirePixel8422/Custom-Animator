@@ -38,7 +38,7 @@ public sealed class MessageIfDrawer : PropertyDrawer
         helpBoxRect.y += propertyHeight + 2f;
         helpBoxRect.height = EditorGUIUtility.singleLineHeight * 2f;
 
-        EditorGUI.HelpBox(helpBoxRect, messageAttribute.Message, messageAttribute.MessageType);
+        EditorGUI.HelpBox(helpBoxRect, messageAttribute.Message, (UnityEditor.MessageType)messageAttribute.MessageType);
     }
 
     private bool ShouldShow(SerializedProperty property)

@@ -6,21 +6,22 @@ using UnityEngine;
 
 public class CustomAnimator : MonoBehaviour
 {
-#if UNITY_EDITOR
     [SerializeField] private BakedAnimSO bakedAnimSO;
-    public void SetBakedAnimSO(BakedAnimSO newSO)
-    {
-        bakedAnimSO = newSO; 
-        ReloadAnimation();
-    }
-#endif
 
     [SerializeField] private GameObject targetObj;
+
 
     [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
     [SerializeField, EditorReadOnly] private BakedAnimClip currentClip;
 
+#if UNITY_EDITOR
+    [SerializeField] private bool showDebugInfo;
+#endif
+
+    [ShowIf("showDebugInfo")]
     [SerializeField, EditorReadOnly] private float frameId;
+
+    [field: ShowIf("showDebugInfo")]
     [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
 
 
@@ -28,11 +29,8 @@ public class CustomAnimator : MonoBehaviour
     public GameObject TargetObj => targetObj;
     public Transform[] TargetTransforms => targetTransforms;
 
-    [SerializeField] private bool showDebugInfo;
-
-    [ShowIf(nameof(showDebugInfo))]
+    [ShowIf("showDebugInfo")]
     [SerializeField, EditorReadOnly] private string updateTimeMs;
-#endif
 
 
     private void OnValidate()
@@ -43,6 +41,13 @@ public class CustomAnimator : MonoBehaviour
 
         targetTransforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
     }
+
+    public void SetBakedAnimSO(BakedAnimSO newSO)
+    {
+        bakedAnimSO = newSO;
+        ReloadAnimation();
+    }
+#endif
 
 
     private void Awake()
@@ -80,16 +85,20 @@ public class CustomAnimator : MonoBehaviour
 
     private void UpdateAnimation()
     {
+#if UNITY_EDITOR
         Stopwatch sw = Stopwatch.StartNew();
+#endif
 
         frameId += Time.deltaTime / currentClip.FrameDuration;
         frameId %= currentClip.FrameCount;
 
         currentClip.ApplyToTargetTransforms(targetTransforms, frameId);
 
+#if UNITY_EDITOR
         if (showDebugInfo)
         {
             updateTimeMs = (sw.ElapsedTicks * 0.001f).ToString("N2") + "ms";
         }
+#endif
     }
 }
