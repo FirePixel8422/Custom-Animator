@@ -10,8 +10,8 @@ public class BakedAnimSO : ScriptableObject
 
 
     [field: ShowIf(nameof(TargetClip))]
-    [field: ErrorIf(ComparisonType.LessThanOrEqual, 0, "FrameRate has to be higher then 0")]
-    [field: SerializeField] public int FrameRate { get; private set; }
+    [field: Range(2, 60)]
+    [field: SerializeField] public int BakeFrameRate { get; private set; } = 2;
 #endif
 
     [Rename("Baked Animation Clip")]

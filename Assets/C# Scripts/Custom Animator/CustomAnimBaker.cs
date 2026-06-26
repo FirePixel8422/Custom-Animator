@@ -39,7 +39,7 @@ public class CustomAnimBaker : MonoBehaviour
             return;
         }
 
-        AnimBakeUtils.Bake(bakedAnimSO.TargetClip, this.anim.TargetObj, this.anim.TargetTransforms, bakedAnimSO.FrameRate, out bakedAnimSO.Value);
+        AnimBakeUtils.Bake(bakedAnimSO.TargetClip, this.anim.TargetObj, this.anim.TargetTransforms, bakedAnimSO.BakeFrameRate, out bakedAnimSO.Value);
         anim.ReloadAnimation();
     }
 
