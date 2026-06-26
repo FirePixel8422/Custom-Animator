@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using Fire_Pixel.Utility;
+using System.Diagnostics;
+using UnityEngine;
 
 
 
-public class CustomAnimator : UpdateMonoBehaviour
+public class CustomAnimator : MonoBehaviour
 {
     public BakedAnimSO BakedAnimSO;
     [SerializeField] private GameObject targetObj;
@@ -11,11 +13,17 @@ public class CustomAnimator : UpdateMonoBehaviour
     [SerializeField, EditorReadOnly] private BakedAnimClip currentClip;
 
     [SerializeField, EditorReadOnly] private float frameId;
-    [SerializeField, EditorReadOnly] private bool isPlaying;
+    [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
+
 
 #if UNITY_EDITOR
     public GameObject TargetObj => targetObj;
     public Transform[] TargetTransforms => targetTransforms;
+
+    [SerializeField] private bool showDebugInfo;
+
+    [ShowIf(nameof(showDebugInfo))]
+    [SerializeField, EditorReadOnly] private string updateTimeMs;
 #endif
 
 
@@ -27,32 +35,53 @@ public class CustomAnimator : UpdateMonoBehaviour
 
         targetTransforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
     }
+
+
+    private void Awake()
+    {
+        if (IsPlaying) Play();
+    }
+
+
     public void ReloadAnimation()
     {
         currentClip = BakedAnimSO.Value;
     }
 
+
+    #region Play/Stop/Crossfade
+
     [InspectorButton("[Play]")]
     private void Play()
     {
-        isPlaying = true;
+        CallbackScheduler.RegisterCallback(UpdateAnimation, CallbackType.Update);
+        IsPlaying = true;
+
+        DebugLogger.LogError($"Transform count isnt equal to baked clip length, {currentClip.TrackCount}, {targetTransforms.Length}", currentClip.TrackCount != targetTransforms.Length);
     }
     [InspectorButton("[Stop]")]
     private void Stop()
     {
-        isPlaying = false;
-        //frameId = 0;
+        CallbackScheduler.UnRegisterCallback(UpdateAnimation, CallbackType.Update);
+        IsPlaying = false;
+        frameId = 0;
     }
 
-    protected override void OnUpdate()
-    {
-        if (!isPlaying) return;
+    #endregion
 
-        //DebugLogger.Throw($"Transform count isnt equal to baked clip length, {currentClip.TrackCount}, {transforms.Length}", currentClip.TrackCount != transforms.Length);
+
+    private void UpdateAnimation()
+    {
+        Stopwatch sw = Stopwatch.StartNew();
 
         frameId += Time.deltaTime / currentClip.FrameDuration;
         frameId %= currentClip.FrameCount;
 
         currentClip.ApplyToTargetTransforms(targetTransforms, frameId);
+
+        if (showDebugInfo)
+        {
+            updateTimeMs = (sw.ElapsedTicks * 0.001f).ToString("N2") + "ms";
+        }
     }
 }
