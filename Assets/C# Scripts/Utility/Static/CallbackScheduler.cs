@@ -1,10 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 
 namespace Fire_Pixel.Utility
@@ -55,116 +54,90 @@ namespace Fire_Pixel.Utility
         }
 
 
-        #region void Update
+        #region Register/UnRegister/Manage Callbacks
 
         /// <summary>
         /// Register a method to call every frame like Update()
         /// </summary>
-        public static void RegisterUpdate(Action action)
+        public static void RegisterCallback(Action action, CallbackType type)
         {
-            Update += action;
-        }
-        /// <summary>
-        /// Unregister a registerd method for Update()
-        /// </summary>
-        public static void UnRegisterUpdate(Action action)
-        {
-            Update -= action;
-        }
-        /// <summary>
-        /// Register or Unregister a method for Update() based on bool <paramref name="register"/>
-        /// </summary>
-        public static void ManageUpdate(Action action, bool register)
-        {
-            if (register)
+            switch (type)
             {
-                RegisterUpdate(action);
+                case CallbackType.Update:
+                    Update += action;
+                    return;
+
+                case CallbackType.LateUpdate:
+                    LateUpdate += action;
+                    return;
+
+                case CallbackType.FixedUpdate:
+                    FixedUpdate += action;
+                    return;
+
+                case CallbackType.LateDestroy:
+                    LateDestroy += action;
+                    return;
+
+                case CallbackType.LateApplicationQuit:
+                    LateApplicationQuit += action;
+                    return;
+
+                default:
+                    DebugLogger.LogError($"CallbackType {type} doesnt exist. Register failed.");
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Unregister a registered method for callback "<paramref name="type"/>"
+        /// </summary>
+        public static void UnRegisterCallback(Action action, CallbackType type)
+        {
+            switch (type)
+            {
+                case CallbackType.Update:
+                    Update -= action;
+                    return;
+
+                case CallbackType.LateUpdate:
+                    LateUpdate -= action;
+                    return;
+
+                case CallbackType.FixedUpdate:
+                    FixedUpdate -= action;
+                    return;
+
+                case CallbackType.LateDestroy:
+                    LateDestroy -= action;
+                    return;
+
+                case CallbackType.LateApplicationQuit:
+                    LateApplicationQuit -= action;
+                    return;
+
+                default:
+                    DebugLogger.LogError($"CallbackType {type} doesnt exist. Unregister failed.");
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Register or Unregister a method for callback "<paramref name="type"/>" based on bool <paramref name="doRegister"/>
+        /// </summary>
+        public static void ManageCallback(Action action, CallbackType type, bool doRegister)
+        {
+            if (doRegister)
+            {
+                RegisterCallback(action, type);
             }
             else
             {
-                UnRegisterUpdate(action);
+                UnRegisterCallback(action, type);
             }
         }
 
         #endregion
-
-
-        #region void LateUpdate
-
-        /// <summary>
-        /// Register a method to call after every frame like LateUpdate()
-        /// </summary>
-        public static void RegisterLateUpdate(Action action)
-        {
-            LateUpdate += action;
-        }
-        /// <summary>
-        /// Unregister a registerd method for LateUpdate()
-        /// </summary>
-        public static void UnRegisterLateUpdate(Action action)
-        {
-            LateUpdate -= action;
-        }
-        /// <summary>
-        /// Register or Unregister a method for LateUpdate() based on bool <paramref name="register"/>
-        /// </summary>
-        public static void ManageLateUpdate(Action action, bool register)
-        {
-            if (register)
-            {
-                RegisterLateUpdate(action);
-            }
-            else
-            {
-                UnRegisterLateUpdate(action);
-            }
-        }
-
-        #endregion
-
-
-        #region void FixedUpdate
-
-        /// <summary>
-        /// Register a method to call every fixed frame like FixedUpdate()
-        /// </summary>
-        public static void RegisterFixedUpdate(Action action)
-        {
-            FixedUpdate += action;
-        }
-        /// <summary>
-        /// Unregister a registerd method for FixedUpdate()
-        /// </summary>
-        public static void UnRegisterFixedUpdate(Action action)
-        {
-            FixedUpdate -= action;
-        }
-        /// <summary>
-        /// Register or Unregister a method for FixedUpdate() based on bool <paramref name="register"/>
-        /// </summary>
-        public static void ManageFixedUpdate(Action action, bool register)
-        {
-            if (register)
-            {
-                RegisterFixedUpdate(action);
-            }
-            else
-            {
-                UnRegisterFixedUpdate(action);
-            }
-        }
-
-        #endregion
-
-
-        public static void CreateLateDestroyCallback(Action action)
-        {
-            LateDestroy += action;
-        }
-        public static void CreateLateApplicationQuitCallback(Action action)
-        {
-            LateApplicationQuit += action;
-        }
 
 
         #region Delayed Invoke Callbacks
@@ -244,12 +217,8 @@ namespace Fire_Pixel.Utility
         /// </summary>
         private class CallbackRunnerInstance : MonoBehaviour
         {
-            public static CallbackRunnerInstance Instance { get; set; }
-
-
             public void Init()
             {
-                Instance = this;
                 StartCoroutine(UpdateLoop());
             }
             private IEnumerator UpdateLoop()
@@ -259,14 +228,6 @@ namespace Fire_Pixel.Utility
 
                 while (true)
                 {
-                    if (quitting)
-                    {
-                        LateApplicationQuit?.Invoke();
-                        LateApplicationQuit = null;
-                        StopAllCoroutines();
-                        yield break;
-                    }
-
                     // Update
                     Update?.Invoke();
 
@@ -293,10 +254,16 @@ namespace Fire_Pixel.Utility
                     // LateUpdate
                     LateUpdate?.Invoke();
 
-                    if (LateDestroy != null)
+                    // Also LateUpdate, but clears all subscribers
+                    LateDestroy?.Invoke();
+                    LateDestroy = null;
+
+                    if (quitting)
                     {
-                        LateDestroy.Invoke();
-                        LateDestroy = null;
+                        LateApplicationQuit?.Invoke();
+                        LateApplicationQuit = null;
+                        StopAllCoroutines();
+                        yield break;
                     }
 
                     yield return null;
@@ -332,4 +299,14 @@ public class InvokeCallbackReference
     {
         Id = id;
     }
+}
+
+public enum CallbackType
+{
+    Update,
+    LateUpdate,
+    FixedUpdate,
+
+    LateDestroy,
+    LateApplicationQuit,
 }

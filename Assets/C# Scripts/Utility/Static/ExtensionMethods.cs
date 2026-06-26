@@ -487,7 +487,7 @@ public static class ExtensionMethods
     /// </summary>
     public static int AddSmart(this ref int value, int toAdd, int length)
     {
-        DebugLogger.Throw("AddSmart called with length 0", length <= 0);
+        DebugLogger.LogError("AddSmart called with length 0", length <= 0);
 
         value += toAdd;
         while (value >= length)
