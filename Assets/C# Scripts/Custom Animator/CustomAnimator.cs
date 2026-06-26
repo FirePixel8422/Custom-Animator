@@ -19,7 +19,7 @@ public class CustomAnimator : MonoBehaviour
 #endif
 
     [ShowIf("showDebugInfo")]
-    [SerializeField, EditorReadOnly] private float frameId;
+    [SerializeField, EditorReadOnly] private float playbackTime;
 
     [field: ShowIf("showDebugInfo")]
     [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
@@ -31,6 +31,12 @@ public class CustomAnimator : MonoBehaviour
 
     [ShowIf("showDebugInfo")]
     [SerializeField, EditorReadOnly] private string updateTimeMs;
+    [ShowIf("showDebugInfo")]
+    [SerializeField, EditorReadOnly] private string updateTimeAvg;
+
+    private long totalUpdateTimeTicks;
+    private int totalElapsedFrames;
+    private Stopwatch sw;
 
 
     private void OnValidate()
@@ -77,7 +83,12 @@ public class CustomAnimator : MonoBehaviour
     {
         CallbackScheduler.UnRegisterCallback(UpdateAnimation, CallbackType.Update);
         IsPlaying = false;
-        frameId = 0;
+        playbackTime = 0;
+
+#if UNITY_EDITOR
+        totalUpdateTimeTicks = 0;
+        totalElapsedFrames = 0;
+#endif
     }
 
     #endregion
@@ -86,18 +97,25 @@ public class CustomAnimator : MonoBehaviour
     private void UpdateAnimation()
     {
 #if UNITY_EDITOR
-        Stopwatch sw = Stopwatch.StartNew();
+        if (showDebugInfo)
+        {
+            sw = Stopwatch.StartNew();
+        }
 #endif
 
-        frameId += Time.deltaTime / currentClip.FrameDuration;
-        frameId %= currentClip.FrameCount;
+        playbackTime += Time.deltaTime / currentClip.FrameDuration;
+        playbackTime %= currentClip.FrameCount;
 
-        currentClip.ApplyToTargetTransforms(targetTransforms, frameId);
+        currentClip.ApplyToTargetTransforms(targetTransforms, playbackTime);
 
 #if UNITY_EDITOR
         if (showDebugInfo)
         {
+            totalUpdateTimeTicks += sw.ElapsedTicks;
+            totalElapsedFrames += 1;
+
             updateTimeMs = (sw.ElapsedTicks * 0.001f).ToString("N2") + "ms";
+            updateTimeAvg = ((float)totalUpdateTimeTicks / totalElapsedFrames * 0.001f).ToString("N2") + "ms";
         }
 #endif
     }

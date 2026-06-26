@@ -929,7 +929,13 @@ PlayerSettings:
   XboxOneOverrideIdentityName: 
   XboxOneOverrideIdentityPublisher: 
   vrEditorSettings: {}
-  cloudServicesEnabled: {}
+  cloudServicesEnabled:
+    Build: 0
+    Game Performance: 0
+    Legacy Analytics: 0
+    Purchasing: 0
+    UDP: 0
+    Unity Ads: 0
   luminIcon:
     m_Name: 
     m_ModelFolderPath: 
@@ -951,11 +957,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: ee246512-e8cc-4693-bd17-708efb29b3d0
+  cloudProjectId: 36f330f8-095f-48d7-9036-b995339024b5
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: High Energy Advanced Technology
-  organizationId: fire-pixel8422
+  projectName: Knockoff Knockout
+  organizationId: bmtminecraft
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

@@ -1,4 +1,6 @@
-﻿using Unity.Mathematics;
+﻿using System.Runtime.CompilerServices;
+using Unity.Burst;
+using Unity.Mathematics;
 using UnityEngine;
 
 
@@ -11,9 +13,9 @@ public struct BakedAnimClip
     public int FrameCount;
 
     // All transformation data for all tracks, packed into one array
-    public float3[] Positions;
-    public quaternion[] Rotations;
-    public float3[] Scales;
+    public Vector3[] Positions;
+    public Quaternion[] Rotations;
+    public Vector3[] Scales;
     public readonly int TrackCount => Tracks.Length;
 
 
@@ -29,9 +31,9 @@ public struct BakedAnimClip
 
         int maxArrayLength = trackCount * frameCount;
 
-        Positions = new float3[maxArrayLength];
-        Rotations = new quaternion[maxArrayLength];
-        Scales = new float3[maxArrayLength];
+        Positions = new Vector3[maxArrayLength];
+        Rotations = new Quaternion[maxArrayLength];
+        Scales = new Vector3[maxArrayLength];
 
         FrameDuration = frameDuration;
         FrameCount = frameCount;
@@ -48,68 +50,84 @@ public struct BakedAnimClip
             int transformationIndex = i * frameCount + frameId;
 
             transforms[i].GetLocalPositionAndRotation(out Vector3 pos, out Quaternion rot);
-            Positions[transformationIndex] = pos;
-            Rotations[transformationIndex] = rot;
-            Scales[transformationIndex] = transforms[i].localScale;
+            Positions[transformationIndex] = (Vector3)pos;
+            Rotations[transformationIndex] = new Quaternion(rot.x, rot.y, rot.z, rot.w);
+            Scales[transformationIndex] = (Vector3)transforms[i].localScale;
         }
     }
 
     /// <summary>
     /// Apply current animation frame transformation data to target transform
     /// </summary>
-    public void ApplyToTargetTransforms(Transform[] transforms, float frameId)
+    public readonly void ApplyToTargetTransforms(Transform[] transforms, float playbackTime)
     {
         int trackCount = TrackCount;
+        int frameId = (int)playbackTime;
+        bool passedLastAnimFrame = playbackTime >= FrameCount - 1;
+
+        float t = playbackTime - (int)playbackTime;
+
+        Vector3 pos = default;
+        Quaternion rot = default;
+        Vector3 scale = default;
+
         for (int i = 0; i < trackCount; i++)
         {
-            int transformationIndexA = Tracks[i].FrameOffset + (int)frameId;
-            int transformationIndexB = Tracks[i].FrameOffset + (frameId >= FrameCount - 1 ? 0 : (int)frameId + 1);
-            float t = frameId - (int)frameId;
             Transform transform = transforms[i];
+            BakedAnimTrack track = Tracks[i];
 
-            switch (Tracks[i].Flags)
+            int offset = track.FrameOffset;
+            int idxA = frameId + offset;
+            int idxB = passedLastAnimFrame ? offset : idxA + 1;
+
+            TransformationFlags flags = track.Flags;
+
+            bool hasPos = (flags & TransformationFlags.Position) != 0;
+            bool hasRot = (flags & TransformationFlags.Rotation) != 0;
+            bool hasScale = (flags & TransformationFlags.Scale) != 0;
+
+            if (hasPos)
+                pos = Lerp(Positions[idxA], Positions[idxB], t);
+
+            if (hasRot)
+                rot = Lerp(Rotations[idxA], Rotations[idxB], t);
+
+            if (hasScale)
+                scale = Lerp(Scales[idxA], Scales[idxB], t);
+
+            if (hasPos && hasRot)
             {
-                case TransformationFlags.Position:
-                    transform.localPosition = math.lerp(Positions[transformationIndexA], Positions[transformationIndexB], t);
-                    break;
+                transform.SetLocalPositionAndRotation(pos, rot);
+            }
+            else if (hasPos)
+            {
+                transform.localPosition = pos;
+            }
+            else if (hasRot)
+            {
+                transform.localRotation = rot;
+            }
 
-                case TransformationFlags.Rotation:
-                    transform.localRotation = math.slerp(Rotations[transformationIndexA], Rotations[transformationIndexB], t);
-                    break;
-
-                case TransformationFlags.Scale:
-                    transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
-                    break;
-
-                case TransformationFlags.Position | TransformationFlags.Rotation:
-                    transform.SetLocalPositionAndRotation(
-                        math.lerp(Positions[transformationIndexA], Positions[transformationIndexB], t),
-                        math.slerp(Rotations[transformationIndexA], Rotations[transformationIndexB], t));
-                    break;
-
-                case TransformationFlags.Position | TransformationFlags.Scale:
-                    transform.localPosition = math.lerp(Positions[transformationIndexA], Positions[transformationIndexB], t);
-                    transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
-                    break;
-
-                case TransformationFlags.Rotation | TransformationFlags.Scale:
-                    transform.localRotation = math.slerp(Rotations[transformationIndexA], Rotations[transformationIndexB], t);
-                    transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
-                    break;
-
-                case TransformationFlags.Position | TransformationFlags.Rotation | TransformationFlags.Scale:
-
-                    //DebugLogger.Log(math.lerp(transformationIndexA, transformationIndexB, t));
-
-                    transform.SetLocalPositionAndRotation(
-                        math.lerp(Positions[transformationIndexA], Positions[transformationIndexB], t),
-                        math.slerp(Rotations[transformationIndexA], Rotations[transformationIndexB], t));
-                    transform.localScale = math.lerp(Scales[transformationIndexA], Scales[transformationIndexB], t);
-                    break;
-
-                default:
-                    return;
+            if (hasScale)
+            {
+                transform.localScale = scale;
             }
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector3 Lerp(Vector3 a, Vector3 b, float t)
+    {
+        return a + (b - a) * t;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Quaternion Lerp(Quaternion a, Quaternion b, float t)
+    {
+        return new Quaternion(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t,
+            a.w + (b.w - a.w) * t
+        );
     }
 }
