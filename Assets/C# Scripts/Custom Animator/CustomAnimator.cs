@@ -6,7 +6,15 @@ using UnityEngine;
 
 public class CustomAnimator : MonoBehaviour
 {
-    public BakedAnimSO BakedAnimSO;
+#if UNITY_EDITOR
+    [SerializeField] private BakedAnimSO bakedAnimSO;
+    public void SetBakedAnimSO(BakedAnimSO newSO)
+    {
+        bakedAnimSO = newSO; 
+        ReloadAnimation();
+    }
+#endif
+
     [SerializeField] private GameObject targetObj;
 
     [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
@@ -29,7 +37,7 @@ public class CustomAnimator : MonoBehaviour
 
     private void OnValidate()
     {
-        if (BakedAnimSO == null || targetObj == null) return;
+        if (bakedAnimSO == null || targetObj == null) return;
 
         ReloadAnimation();
 
@@ -45,7 +53,7 @@ public class CustomAnimator : MonoBehaviour
 
     public void ReloadAnimation()
     {
-        currentClip = BakedAnimSO.Value;
+        currentClip = bakedAnimSO.Value;
     }
 
 

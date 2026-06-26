@@ -1,19 +1,20 @@
 ﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [CustomPropertyDrawer(typeof(InlineSOAttribute))]
 public sealed class InlineSODrawer : PropertyDrawer
 {
+    private const float FoldoutWidth = 16f;
+    private const float AlignFix = 2f;
+
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
         float height = EditorGUIUtility.singleLineHeight;
 
-        // Null or collapsed = single line only
         if (property.objectReferenceValue == null || !property.isExpanded)
-        {
             return height;
-        }
 
         SerializedObject so = new SerializedObject(property.objectReferenceValue);
         SerializedProperty iterator = so.GetIterator();
@@ -50,18 +51,55 @@ public sealed class InlineSODrawer : PropertyDrawer
 
         bool hasObject = property.objectReferenceValue != null;
 
-        // Only reserve foldout space if object exists
-        float foldoutWidth = hasObject ? 14f : 0f;
+        float indentBackup = EditorGUI.indentLevel;
+        EditorGUI.indentLevel = 0;
 
+        Rect foldoutRect = new Rect(
+            lineRect.x - 1,
+            lineRect.y,
+            FoldoutWidth,
+            lineRect.height
+        );
+
+        Rect labelRect = new Rect(
+            lineRect.x + FoldoutWidth - 1,
+            lineRect.y,
+            EditorGUIUtility.labelWidth - FoldoutWidth - 1,
+            lineRect.height
+        );
+
+        Rect objectRect = new Rect(
+            position.x + EditorGUIUtility.labelWidth + AlignFix,
+            lineRect.y,
+            position.width - EditorGUIUtility.labelWidth - AlignFix,
+            lineRect.height
+        );
+
+        Rect hoverRect = new Rect(
+            lineRect.x - 14,
+            lineRect.y,
+            lineRect.width + 30f,
+            lineRect.height
+        );
+
+        bool isHovering =
+            hasObject &&
+            hoverRect.Contains(Event.current.mousePosition);
+
+        if (isHovering)
+        {
+            Color c = EditorGUIUtility.isProSkin
+                ? new Color(1f, 1f, 1f, 0.05f)
+                : new Color(0f, 0f, 0f, 0.04f);
+
+            EditorGUI.indentLevel--;
+            EditorGUI.DrawRect(hoverRect, c);
+            EditorGUI.indentLevel++;
+        }
+
+        // Foldout ONLY here
         if (hasObject)
         {
-            Rect foldoutRect = new Rect(
-                lineRect.x,
-                lineRect.y,
-                foldoutWidth,
-                lineRect.height
-            );
-
             property.isExpanded = EditorGUI.Foldout(
                 foldoutRect,
                 property.isExpanded,
@@ -71,26 +109,22 @@ public sealed class InlineSODrawer : PropertyDrawer
         }
         else
         {
-            // Prevent stale expanded state when null
             property.isExpanded = false;
         }
 
-        Rect labelRect = new Rect(
-            lineRect.x + foldoutWidth,
-            lineRect.y,
-            EditorGUIUtility.labelWidth - foldoutWidth,
-            lineRect.height
-        );
+        // Label toggles expand
+        if (hasObject && Event.current.type == EventType.MouseDown &&
+            labelRect.Contains(Event.current.mousePosition))
+        {
+            property.isExpanded = !property.isExpanded;
+            Event.current.Use();
+        }
 
-        Rect objectRect = new Rect(
-            position.x + EditorGUIUtility.labelWidth,
-            lineRect.y,
-            position.width - EditorGUIUtility.labelWidth,
-            lineRect.height
-        );
-
+        EditorGUI.indentLevel--;
         EditorGUI.LabelField(labelRect, label);
+        EditorGUI.indentLevel++;
 
+        // Object field behaves normally ONLY (no toggle logic)
         property.objectReferenceValue = EditorGUI.ObjectField(
             objectRect,
             property.objectReferenceValue,
@@ -98,14 +132,15 @@ public sealed class InlineSODrawer : PropertyDrawer
             false
         );
 
-        // If no object assigned, stop after normal object field
+        EditorGUI.indentLevel = (int)indentBackup;
+
         if (property.objectReferenceValue == null)
         {
+            property.isExpanded = false;
             EditorGUI.EndProperty();
             return;
         }
 
-        // Draw inline fields only when expanded
         if (property.isExpanded)
         {
             EditorGUI.indentLevel++;

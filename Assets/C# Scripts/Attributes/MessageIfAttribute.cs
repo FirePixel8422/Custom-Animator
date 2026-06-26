@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-public class MessageIfAttribute : PropertyAttribute
+public abstract class MessageIfAttribute : PropertyAttribute
 {
     public readonly ComparisonType Comparison;
     public readonly float Value;
@@ -15,19 +15,16 @@ public class MessageIfAttribute : PropertyAttribute
         Message = message;
         MessageType = messageType;
     }
-
-    public MessageIfAttribute(ComparisonType comparison, float value, string message)
+}
+public sealed class InfoIfAttribute : MessageIfAttribute
+{
+    public InfoIfAttribute(ComparisonType comparison, float value, string message)
+        : base(comparison, value, message, MessageType.Info)
     {
-        Comparison = comparison;
-        Value = value;
-        Message = message;
-        MessageType = MessageType.Info;
     }
-    public MessageIfAttribute(ComparisonType comparison, string message)
+    public InfoIfAttribute(ComparisonType comparison, string message)
+        : base(comparison, default, message, MessageType.Info)
     {
-        Comparison = comparison;
-        Message = message;
-        MessageType = MessageType.Info;
     }
 }
 public sealed class WarningIfAttribute : MessageIfAttribute

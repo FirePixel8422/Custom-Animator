@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b9e9830efec3af4aa0d2ec2566e2c78, type: 3}
   m_Name: TeepKick
   m_EditorClassIdentifier: Assembly-CSharp::BakedAnimSO
-  <TargetClip>k__BackingField: {fileID: 0}
+  <TargetClip>k__BackingField: {fileID: -1203168824884973821, guid: f56bd06238713cb4fbae175ea8d17357,
+    type: 3}
   <BakeFrameRate>k__BackingField: 30
   Value:
     Tracks:
