@@ -3,11 +3,11 @@ using System;
 
 
 [Flags]
-public enum TransformationFlags : byte
+public enum TransformationFlags : int
 {
-    Position = 2,
-    Rotation = 4,
-    Scale = 8,
+    Position = 1,
+    Rotation = 2,
+    Scale = 4,
 
     All = Position | Rotation | Scale,
 }

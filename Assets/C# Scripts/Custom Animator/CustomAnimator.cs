@@ -29,6 +29,10 @@ public class CustomAnimator : MonoBehaviour
     [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
 
     private float oneDivFrameDuration;
+    private BakedAnimTrack[] tracks;
+    private Vector3[] positions;
+    private Quaternion[] rotations;
+    private Vector3[] scales;
 
 
 #if UNITY_EDITOR
@@ -55,7 +59,11 @@ public class CustomAnimator : MonoBehaviour
 
     private void Awake()
     {
-        if (IsPlaying) Play();
+        if (IsPlaying)
+        {
+            ReloadAnimation();
+            Play();
+        }
 
         if (targetObj == null)
         {
@@ -63,12 +71,21 @@ public class CustomAnimator : MonoBehaviour
             targetObj = gameObject;
         }
     }
+    private void OnDestroy()
+    {
+        if (IsPlaying) Stop();
+    }
 
 
     public void ReloadAnimation()
     {
         currentClip = bakedAnimSO.Value;
         oneDivFrameDuration = 1 / currentClip.FrameDuration;
+
+        tracks = currentClip.Tracks;
+        positions = currentClip.Positions;
+        rotations = currentClip.Rotations;
+        scales = currentClip.Scales;
     }
 
 
@@ -99,8 +116,70 @@ public class CustomAnimator : MonoBehaviour
             playbackTime -= currentClip.FrameCount;
         }
 
-        currentClip.ApplyToTargetTransforms(targetTransforms, playbackTime);
+        UpdateTransforms(targetTransforms, playbackTime);
     }
+
+    /// <summary>
+    /// Apply current animation frame transformation data to target transform
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void UpdateTransforms(Transform[] transforms, float playbackTime)
+    {
+        int trackCount = currentClip.TrackCount;
+        int frameId = (int)playbackTime;
+
+        bool passedLastAnimFrame = playbackTime >= currentClip.FrameCount - 1;
+        float t = playbackTime - (int)playbackTime;
+
+        BakedAnimTrack track;
+        Transform transform;
+
+        for (int i = 0; i < trackCount; i++)
+        {
+            track = tracks[i];
+
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            //Remove TransformId
+            transform = transforms[track.TransformId];
+
+            int idx = frameId + track.FrameOffset;
+            int idxB = passedLastAnimFrame ? track.FrameOffset : idx + 1;
+
+            TransformationFlags flags = track.Flags;
+
+            if ((flags & TransformationFlags.Position) != 0)
+            {
+                transform.localPosition = Lerp(positions[idx], positions[idxB], t);
+            }
+            if ((flags & TransformationFlags.Rotation) != 0)
+            {
+                transform.localRotation = Lerp(rotations[idx], rotations[idxB], t);
+            }
+            if ((flags & TransformationFlags.Scale) != 0)
+            {
+                transform.localScale = Lerp(scales[idx], scales[idxB], t);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void UpdateTransformsCrossfade()
+    {
+
+    }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector3 Lerp(Vector3 a, Vector3 b, float t)

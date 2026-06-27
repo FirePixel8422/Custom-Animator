@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Unity.Collections;
 using UnityEngine;
 
 
 /// <summary>
-/// Static class responsible for baking 
+/// Static class responsible for baking an <see cref="AnimationClip"/> to into a <see cref="BakedAnimClip"/> for the <see cref="CustomAnimator"/>
 /// </summary>
 public static class AnimBakeUtils
 {
@@ -63,9 +62,9 @@ public static class AnimBakeUtils
 
             DebugLogger.Log($"Optimise Finished," +
                 $" tracks left (transforms): {clipRecording.TrackCount}/{trackCount}," +
-                $" positions left: {trackCount - 0}/{trackCount}," +
-                $" rotations left: {trackCount - 0}/{trackCount}," +
-                $" scales left: {trackCount - 0}/{trackCount},");
+                $" positions left: {trackCount}/{trackCount}," +
+                $" rotations left: {trackCount}/{trackCount}," +
+                $" scales left: {trackCount}/{trackCount},");
 
             return;
         }
@@ -84,6 +83,7 @@ public static class AnimBakeUtils
 
             float dist;
 
+            // Check transformation changes in the recorded frames.
             for (int i2 = 0; i2 < frameCount; i2++)
             {
                 int targetId = i * frameCount + i2;
@@ -107,10 +107,10 @@ public static class AnimBakeUtils
                 }
             }
 
-            // Check if target track contributes to animation, if not remove it from the animation
+            // Check if target track is completely empty, if so remove it from the animation
             if (posChangeMeter.HasNoChanges && rotChangeMeter.HasNoChanges && scaleChangeMeter.HasNoChanges)
             {
-                clipRecording.Tracks.RemoveAtSwapBack(i);
+                clipRecording.RemoveTrackSwapBack(i);
 
                 skippedEmptyPositions += 1;
                 skippedEmptyRotations += 1;

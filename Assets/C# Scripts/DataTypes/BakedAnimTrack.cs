@@ -8,15 +8,14 @@
 public struct BakedAnimTrack
 {
     public int TransformId;
-
-    public TransformationFlags Flags;
     public int FrameOffset;
+    public TransformationFlags Flags;
 
-    public BakedAnimTrack(int transformId, TransformationFlags flags, int frameOffset)
+    public BakedAnimTrack(int transformId, int frameOffset, TransformationFlags flags)
     {
         TransformId = transformId;
-        Flags = flags;
         FrameOffset = frameOffset;
+        Flags = flags;
     }
 
 

@@ -23,7 +23,7 @@ public class AnimClipRecording
         Tracks = new List<BakedAnimTrack>(trackCount);
         for (int i = 0; i < trackCount; i++)
         {
-            Tracks.Add(new BakedAnimTrack(i, TransformationFlags.All, frameCount * i));
+            Tracks.Add(new BakedAnimTrack(i, frameCount * i, TransformationFlags.All));
         }
 
         int maxArrayLength = trackCount * frameCount;
@@ -50,6 +50,23 @@ public class AnimClipRecording
             Positions[transformationIndex] = pos;
             Rotations[transformationIndex] = rot;
             Scales[transformationIndex] = transforms[i].localScale;
+        }
+    }
+
+    public void RemoveTrackSwapBack(int trackId)
+    {
+        Tracks.RemoveAt(trackId);
+
+        Positions.RemoveRange(trackId * FrameCount, FrameCount);
+        Rotations.RemoveRange(trackId * FrameCount, FrameCount);
+        Scales.RemoveRange(trackId * FrameCount, FrameCount);
+
+        int trackCount = TrackCount;
+        for (int i = trackId; i < trackCount; i++)
+        {
+            BakedAnimTrack track = Tracks[i];
+            track.FrameOffset -= FrameCount;
+            Tracks[i] = track;
         }
     }
 }
