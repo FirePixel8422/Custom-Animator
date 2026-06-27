@@ -1,59 +1,33 @@
 ﻿using System.Runtime.CompilerServices;
-using Unity.Burst;
-using Unity.Mathematics;
 using UnityEngine;
 
 
 [System.Serializable]
 public struct BakedAnimClip
 {
-    // One Track for every Bone/GameObject in the animation
-    public BakedAnimTrack[] Tracks;
-    public float FrameDuration;
-    public int FrameCount;
+    // One Track for every Bone/Transform in the animation
+    [SerializeField] private BakedAnimTrack[] tracks;
+    public readonly int TrackCount => tracks.Length;
 
     // All transformation data for all tracks, packed into one array
-    public Vector3[] Positions;
-    public Quaternion[] Rotations;
-    public Vector3[] Scales;
-    public readonly int TrackCount => Tracks.Length;
+    [SerializeField] private Vector3[] positions;
+    [SerializeField] private Quaternion[] rotations;
+    [SerializeField] private Vector3[] scales;
+
+    [field: SerializeField] public float FrameDuration { get; private set; }
+    [field: SerializeField] public int FrameCount { get; private set; }
 
 
 
-    public BakedAnimClip(int trackCount, int frameCount, float frameDuration)
+    public BakedAnimClip(BakedAnimTrack[] tracks, Vector3[] positions, Quaternion[] rotations, Vector3[] scales, float frameDuration, int frameCount)
     {
-        Tracks = new BakedAnimTrack[trackCount];
-        for (int i = 0; i < trackCount; i++)
-        {
-            Tracks[i].Flags = TransformationFlags.Position | TransformationFlags.Rotation | TransformationFlags.Scale;
-            Tracks[i].FrameOffset = frameCount * i;
-        }
-
-        int maxArrayLength = trackCount * frameCount;
-
-        Positions = new Vector3[maxArrayLength];
-        Rotations = new Quaternion[maxArrayLength];
-        Scales = new Vector3[maxArrayLength];
+        this.tracks = tracks;
+        this.positions = positions;
+        this.rotations = rotations;
+        this.scales = scales;
 
         FrameDuration = frameDuration;
         FrameCount = frameCount;
-    }
-
-    /// <summary>
-    /// Record (Bake/Write) transformations from current frameId into baked anim arrays
-    /// </summary>
-    public void RecordTransformationData(Transform[] transforms, int frameCount, int frameId)
-    {
-        int trackCount = TrackCount;
-        for (int i = 0; i < trackCount; i++)
-        {
-            int transformationIndex = i * frameCount + frameId;
-
-            transforms[i].GetLocalPositionAndRotation(out Vector3 pos, out Quaternion rot);
-            Positions[transformationIndex] = (Vector3)pos;
-            Rotations[transformationIndex] = new Quaternion(rot.x, rot.y, rot.z, rot.w);
-            Scales[transformationIndex] = (Vector3)transforms[i].localScale;
-        }
     }
 
     /// <summary>
@@ -67,18 +41,19 @@ public struct BakedAnimClip
 
         float t = playbackTime - (int)playbackTime;
 
+        Transform transform;
+
         Vector3 pos = default;
         Quaternion rot = default;
-        Vector3 scale = default;
 
         for (int i = 0; i < trackCount; i++)
         {
-            Transform transform = transforms[i];
-            BakedAnimTrack track = Tracks[i];
+            BakedAnimTrack track = tracks[i];
+            transform = transforms[track.TransformId];
 
             int offset = track.FrameOffset;
             int idxA = frameId + offset;
-            int idxB = passedLastAnimFrame ? offset : idxA + 1;
+            //int idxB = passedLastAnimFrame ? offset : idxA + 1;
 
             TransformationFlags flags = track.Flags;
 
@@ -87,13 +62,16 @@ public struct BakedAnimClip
             bool hasScale = (flags & TransformationFlags.Scale) != 0;
 
             if (hasPos)
-                pos = Lerp(Positions[idxA], Positions[idxB], t);
+                //pos = Lerp(positions[idxA], positions[idxB], t);
+                pos = positions[idxA];
 
             if (hasRot)
-                rot = Lerp(Rotations[idxA], Rotations[idxB], t);
+                //rot = Lerp(rotations[idxA], rotations[idxB], t);
+                rot = rotations[idxA];
 
             if (hasScale)
-                scale = Lerp(Scales[idxA], Scales[idxB], t);
+                //transform.localScale = Lerp(scales[idxA], scales[idxB], t);
+                transform.localScale = scales[idxA];
 
             if (hasPos && hasRot)
             {
@@ -106,11 +84,6 @@ public struct BakedAnimClip
             else if (hasRot)
             {
                 transform.localRotation = rot;
-            }
-
-            if (hasScale)
-            {
-                transform.localScale = scale;
             }
         }
     }

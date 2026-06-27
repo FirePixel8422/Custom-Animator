@@ -1,5 +1,6 @@
 ﻿using Fire_Pixel.Utility;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 
@@ -16,27 +17,23 @@ public class CustomAnimator : MonoBehaviour
 
 #if UNITY_EDITOR
     [SerializeField] private bool showDebugInfo;
+#else
+    // non editor version for build errors fix
+    private bool showDebugInfo => false;
 #endif
 
     [ShowIf("showDebugInfo")]
     [SerializeField, EditorReadOnly] private float playbackTime;
 
-    [field: ShowIf("showDebugInfo")]
+    [field: ShowIf(nameof(showDebugInfo))]
     [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
+
+    private float oneDivFrameDuration;
 
 
 #if UNITY_EDITOR
     public GameObject TargetObj => targetObj;
     public Transform[] TargetTransforms => targetTransforms;
-
-    [ShowIf("showDebugInfo")]
-    [SerializeField, EditorReadOnly] private string updateTimeMs;
-    [ShowIf("showDebugInfo")]
-    [SerializeField, EditorReadOnly] private string updateTimeAvg;
-
-    private long totalUpdateTimeTicks;
-    private int totalElapsedFrames;
-    private Stopwatch sw;
 
 
     private void OnValidate()
@@ -59,12 +56,19 @@ public class CustomAnimator : MonoBehaviour
     private void Awake()
     {
         if (IsPlaying) Play();
+
+        if (targetObj == null)
+        {
+            DebugLogger.Log($"Auto assigned {gameObject} as animator target since target was empty", showDebugInfo);
+            targetObj = gameObject;
+        }
     }
 
 
     public void ReloadAnimation()
     {
         currentClip = bakedAnimSO.Value;
+        oneDivFrameDuration = 1 / currentClip.FrameDuration;
     }
 
 
@@ -75,8 +79,6 @@ public class CustomAnimator : MonoBehaviour
     {
         CallbackScheduler.RegisterCallback(UpdateAnimation, CallbackType.Update);
         IsPlaying = true;
-
-        DebugLogger.LogError($"Transform count isnt equal to baked clip length, {currentClip.TrackCount}, {targetTransforms.Length}", currentClip.TrackCount != targetTransforms.Length);
     }
     [InspectorButton("[Stop]")]
     private void Stop()
@@ -84,11 +86,6 @@ public class CustomAnimator : MonoBehaviour
         CallbackScheduler.UnRegisterCallback(UpdateAnimation, CallbackType.Update);
         IsPlaying = false;
         playbackTime = 0;
-
-#if UNITY_EDITOR
-        totalUpdateTimeTicks = 0;
-        totalElapsedFrames = 0;
-#endif
     }
 
     #endregion
@@ -96,27 +93,28 @@ public class CustomAnimator : MonoBehaviour
 
     private void UpdateAnimation()
     {
-#if UNITY_EDITOR
-        if (showDebugInfo)
+        playbackTime += Time.deltaTime * oneDivFrameDuration;
+        while (playbackTime > currentClip.FrameCount)
         {
-            sw = Stopwatch.StartNew();
+            playbackTime -= currentClip.FrameCount;
         }
-#endif
-
-        playbackTime += Time.deltaTime / currentClip.FrameDuration;
-        playbackTime %= currentClip.FrameCount;
 
         currentClip.ApplyToTargetTransforms(targetTransforms, playbackTime);
+    }
 
-#if UNITY_EDITOR
-        if (showDebugInfo)
-        {
-            totalUpdateTimeTicks += sw.ElapsedTicks;
-            totalElapsedFrames += 1;
-
-            updateTimeMs = (sw.ElapsedTicks * 0.001f).ToString("N2") + "ms";
-            updateTimeAvg = ((float)totalUpdateTimeTicks / totalElapsedFrames * 0.001f).ToString("N2") + "ms";
-        }
-#endif
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector3 Lerp(Vector3 a, Vector3 b, float t)
+    {
+        return a + (b - a) * t;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Quaternion Lerp(Quaternion a, Quaternion b, float t)
+    {
+        return new Quaternion(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t,
+            a.w + (b.w - a.w) * t
+        );
     }
 }

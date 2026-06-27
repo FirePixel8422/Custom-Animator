@@ -10,8 +10,7 @@ public class BakedAnimSO : ScriptableObject
 
 
     [field: ShowIf(nameof(TargetClip))]
-    [field: Range(2, 60)]
-    [field: SerializeField] public int BakeFrameRate { get; private set; } = 2;
+    [field: SerializeField] public AnimBakeSettings BakeSettings { get; private set; }
 #endif
 
     [Rename("Baked Animation Clip")]

@@ -2,13 +2,22 @@
 
 
 /// <summary>
-/// An animation datatype acting as a bone, storing
+/// An animation datatype acting as a bone, storing bound transform "TransformId", what type of transformations to use "Flags" and "FrameOffset" for loop calculations
 /// </summary>
 [System.Serializable]
 public struct BakedAnimTrack
 {
+    public int TransformId;
+
     public TransformationFlags Flags;
     public int FrameOffset;
+
+    public BakedAnimTrack(int transformId, TransformationFlags flags, int frameOffset)
+    {
+        TransformId = transformId;
+        Flags = flags;
+        FrameOffset = frameOffset;
+    }
 
 
     // Split frame offset into offsetPos, offsetRot and OffsetScale to allow the global arrays to be smaller.
