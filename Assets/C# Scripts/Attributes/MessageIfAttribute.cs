@@ -54,6 +54,9 @@ public enum ComparisonType
 {
     IsNull,
 
+    True,
+    False,
+
     LessThan,
     LessThanOrEqual,
     Equal,

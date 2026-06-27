@@ -62,6 +62,9 @@ public sealed class MessageIfDrawer : PropertyDrawer
             case SerializedPropertyType.Float:
                 value = property.floatValue;
                 break;
+            case SerializedPropertyType.Boolean:
+                value = property.boolValue ? 1 : 0;
+                break;
 
             default:
                 return false;
@@ -92,6 +95,13 @@ public sealed class MessageIfDrawer : PropertyDrawer
     {
         switch (attr.Comparison)
         {
+            case ComparisonType.True:
+                return Mathf.Approximately(value, 1);
+
+            case ComparisonType.False:
+                return Mathf.Approximately(value, 0);
+
+
             case ComparisonType.LessThan:
                 return value < attr.Value;
 
