@@ -4,7 +4,7 @@ using UnityEngine;
 
 
 /// <summary>
-/// Static class responsible for baking an <see cref="AnimationClip"/> to into a <see cref="BakedAnimClip"/> for the <see cref="CustomAnimator"/>
+/// Static class responsible for baking an <see cref="AnimationClip"/> to into a <see cref="BakedAnimClip"/> in a hyper optimized wat for usage in the <see cref="CustomAnimator"/>
 /// </summary>
 public static class AnimBakeUtils
 {
@@ -58,7 +58,7 @@ public static class AnimBakeUtils
                 clipRecording.Rotations.ToArray(),
                 clipRecording.Scales.ToArray(),
                 clipRecording.FrameDuration,
-                clipRecording.FrameCount);
+                clipRecording.FrameCount,
 
             DebugLogger.Log($"Optimise Finished," +
                 $" tracks left (transforms): {clipRecording.TrackCount}/{trackCount}," +
@@ -141,13 +141,28 @@ public static class AnimBakeUtils
             clipRecording.Tracks[i] = track;
         }
 
+        // Check if target transformation (pos, rot, scale) has ANY contributers to the animation, if not remove entire channel from the animation
+        if (skippedEmptyPositions == trackCount)
+        {
+            clipRecording.Positions.Clear();
+        }
+        if (skippedEmptyRotations == trackCount)
+        {
+            clipRecording.Rotations.Clear();
+        }
+        if (skippedEmptyScales == trackCount)
+        {
+            clipRecording.Scales.Clear();
+        }
+
+
         bakedClip = new BakedAnimClip(
             clipRecording.Tracks.ToArray(),
             clipRecording.Positions.ToArray(),
             clipRecording.Rotations.ToArray(),
             clipRecording.Scales.ToArray(),
             clipRecording.FrameDuration,
-            clipRecording.FrameCount);
+            clipRecording.FrameCount,
 
         DebugLogger.Log($"Optimise Finished," +
             $" tracks left (transforms): {clipRecording.TrackCount}/{trackCount}," +
