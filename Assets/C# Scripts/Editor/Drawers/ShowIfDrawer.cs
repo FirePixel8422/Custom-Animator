@@ -1,5 +1,4 @@
 ﻿#if UNITY_EDITOR
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,90 +17,106 @@ public sealed class ShowIfDrawer : PropertyDrawer
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
-        if (ShouldShow(property))
+        if (!ShouldShow(property))
         {
-            EditorGUI.PropertyField(position, property, label, true);
+            return;
         }
+
+        EditorGUI.PropertyField(position, property, label, true);
     }
 
     private bool ShouldShow(SerializedProperty property)
     {
         ShowIfAttribute attr = (ShowIfAttribute)attribute;
 
-        SerializedProperty conditionProp = FindPropertyIncludingBacking(property, attr.condition);
+        SerializedProperty condition = FindCondition(property, attr.condition);
 
-        if (conditionProp == null)
+        if (condition == null)
         {
             return true;
         }
 
-        return GetBool(conditionProp);
+        return Evaluate(condition);
     }
 
-    private static SerializedProperty FindPropertyIncludingBacking(SerializedProperty property, string name)
+    private static SerializedProperty FindCondition(SerializedProperty property, string condition)
     {
         SerializedObject obj = property.serializedObject;
 
-        // 1. direct lookup
-        SerializedProperty direct = obj.FindProperty(name);
+        // 1. direct field
+        SerializedProperty direct = obj.FindProperty(condition);
         if (direct != null)
         {
             return direct;
         }
 
-        // 2. backing field lookup (auto property support)
-        string backingName = $"<{name}>k__BackingField";
-        SerializedProperty backing = obj.FindProperty(backingName);
+        // 2. IMPORTANT FIX: scan all properties (handles backing fields correctly)
+        SerializedProperty iterator = obj.GetIterator();
 
-        if (backing != null)
+        while (iterator.NextVisible(true))
         {
-            return backing;
+            if (IsMatch(iterator.name, condition))
+            {
+                return iterator.Copy();
+            }
         }
 
-        // 3. fallback: scan fields via reflection (rare cases, nested types)
-        return FindViaReflection(obj.targetObject, name);
+        // 3. fallback: relative path resolution
+        string path = property.propertyPath;
+        int lastDot = path.LastIndexOf('.');
+
+        while (lastDot >= 0)
+        {
+            string prefix = path.Substring(0, lastDot + 1);
+            SerializedProperty candidate = obj.FindProperty(prefix + condition);
+
+            if (candidate != null)
+            {
+                return candidate;
+            }
+
+            path = path.Substring(0, lastDot);
+            lastDot = path.LastIndexOf('.');
+        }
+
+        return null;
     }
 
-    private static SerializedProperty FindViaReflection(Object target, string name)
+    private static bool IsMatch(string serializedName, string condition)
     {
-        if (target == null)
+        // handles:
+        // <X>k__BackingField
+        // X
+        // _x
+        if (serializedName == condition)
         {
-            return null;
+            return true;
         }
 
-        BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        FieldInfo field = target.GetType().GetField(name, flags);
-
-        if (field == null)
+        if (serializedName == $"<{condition}>k__BackingField")
         {
-            return null;
+            return true;
         }
 
-        return null; // Unity cannot convert FieldInfo → SerializedProperty reliably here
+        if (serializedName.EndsWith(condition))
+        {
+            return true;
+        }
+
+        return false;
     }
 
-    private static bool GetBool(SerializedProperty prop)
+    private static bool Evaluate(SerializedProperty prop)
     {
-        switch (prop.propertyType)
+        return prop.propertyType switch
         {
-            case SerializedPropertyType.Boolean:
-                return prop.boolValue;
-
-            case SerializedPropertyType.ObjectReference:
-                return prop.objectReferenceValue != null;
-
-            case SerializedPropertyType.Integer:
-                return prop.intValue != 0;
-
-            case SerializedPropertyType.Float:
-                return prop.floatValue != 0f;
-
-            case SerializedPropertyType.Enum:
-                return prop.enumValueIndex != 0;
-
-            default:
-                return true;
-        }
+            SerializedPropertyType.Boolean => prop.boolValue,
+            SerializedPropertyType.ObjectReference => prop.objectReferenceValue != null,
+            SerializedPropertyType.Integer => prop.intValue != 0,
+            SerializedPropertyType.Float => prop.floatValue != 0f,
+            SerializedPropertyType.Enum => prop.enumValueIndex != 0,
+            _ => true
+        };
     }
 }
 #endif
