@@ -5,11 +5,13 @@
 [System.Serializable]
 public class AnimBakeSettings
 {
-    //[field: Range(2, 60)]
     [field: SerializeField] public int FrameRate { get; private set; } = 2;
 
+    [field: Tooltip("While enabled, smoothly blend from previous animation frame to the next. Comes with a small performance cost.")]
+    [field: SerializeField] public bool DoLerpSmoothing { get; private set; } = true;
+
     [field: Tooltip("Skip baking tracks and their transform channels that dont contribute to the animation (pos, rot, scale)")]
-    [field: WarningIf(ComparisonType.False, "It is highly recommended to turn this on")]
+    [field: WarningIf(ComparisonType.False, "It is highly recommended to turn OptimizeClipData on")]
     [field: SerializeField] public bool OptimizeClipData { get; private set; } = true;
 
 

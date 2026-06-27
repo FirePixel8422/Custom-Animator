@@ -59,6 +59,7 @@ public static class AnimBakeUtils
                 clipRecording.Scales.ToArray(),
                 clipRecording.FrameDuration,
                 clipRecording.FrameCount,
+                bakeSettings.DoLerpSmoothing);
 
             DebugLogger.Log($"Optimise Finished," +
                 $" tracks left (transforms): {clipRecording.TrackCount}/{trackCount}," +
@@ -163,6 +164,7 @@ public static class AnimBakeUtils
             clipRecording.Scales.ToArray(),
             clipRecording.FrameDuration,
             clipRecording.FrameCount,
+            bakeSettings.DoLerpSmoothing);
 
         DebugLogger.Log($"Optimise Finished," +
             $" tracks left (transforms): {clipRecording.TrackCount}/{trackCount}," +

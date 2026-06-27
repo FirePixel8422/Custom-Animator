@@ -1,6 +1,8 @@
 ﻿using Fire_Pixel.Utility;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using UnityEditor;
 using UnityEngine;
 
 
@@ -12,8 +14,10 @@ public class CustomAnimator : MonoBehaviour
     [SerializeField] private GameObject targetObj;
 
 
-    [SerializeField, EditorReadOnly] private Transform[] targetTransforms;
+    [SerializeField, EditorReadOnly] private Transform[] fullTransformTree;
     [SerializeField, EditorReadOnly] private BakedAnimClip currentClip;
+
+    [SerializeField, EditorReadOnly] private List<Transform> targetTransforms;
 
 #if UNITY_EDITOR
     [SerializeField] private bool showDebugInfo;
@@ -28,8 +32,13 @@ public class CustomAnimator : MonoBehaviour
     [field: ShowIf(nameof(showDebugInfo))]
     [field: SerializeField, EditorReadOnly] public bool IsPlaying { get; private set; }
 
+
     private float oneDivFrameDuration;
+    private bool doLerpSmoothing;
+
     private BakedAnimTrack[] tracks;
+    private int trackCount;
+
     private Vector3[] positions;
     private Quaternion[] rotations;
     private Vector3[] scales;
@@ -37,7 +46,7 @@ public class CustomAnimator : MonoBehaviour
 
 #if UNITY_EDITOR
     public GameObject TargetObj => targetObj;
-    public Transform[] TargetTransforms => targetTransforms;
+    public Transform[] FullTransformTree => fullTransformTree;
 
 
     private void OnValidate()
@@ -46,7 +55,7 @@ public class CustomAnimator : MonoBehaviour
 
         ReloadAnimation();
 
-        targetTransforms = targetObj.transform.GetChildrenRecursively(true).ToArray();
+        fullTransformTree = targetObj.transform.GetChildrenRecursively(true).ToArray();
     }
 
     public void SetBakedAnimSO(BakedAnimSO newSO)
@@ -57,35 +66,51 @@ public class CustomAnimator : MonoBehaviour
 #endif
 
 
+    #region Init/Cleanup
+
     private void Awake()
     {
-        if (IsPlaying)
-        {
-            ReloadAnimation();
-            Play();
-        }
-
         if (targetObj == null)
         {
             DebugLogger.Log($"Auto assigned {gameObject} as animator target since target was empty", showDebugInfo);
             targetObj = gameObject;
+            fullTransformTree = targetObj.transform.GetChildrenRecursively(true).ToArray();
+        }
+
+        targetTransforms = new List<Transform>(fullTransformTree.Length);
+
+        if (IsPlaying)
+        {
+            ReloadAnimation();
+            Play();
         }
     }
     private void OnDestroy()
     {
         if (IsPlaying) Stop();
     }
+    #endregion
 
 
     public void ReloadAnimation()
     {
         currentClip = bakedAnimSO.Value;
+
         oneDivFrameDuration = 1 / currentClip.FrameDuration;
+        doLerpSmoothing = currentClip.DoLerpSmoothing;
 
         tracks = currentClip.Tracks;
         positions = currentClip.Positions;
         rotations = currentClip.Rotations;
         scales = currentClip.Scales;
+
+        trackCount = currentClip.TrackCount;
+        targetTransforms.Clear();
+
+        for (int i = 0; i < trackCount; i++)
+        {
+            targetTransforms.Add(fullTransformTree[tracks[i].TransformId]);
+        }
     }
 
 
@@ -116,16 +141,54 @@ public class CustomAnimator : MonoBehaviour
             playbackTime -= currentClip.FrameCount;
         }
 
-        UpdateTransforms(targetTransforms, playbackTime);
+        if (doLerpSmoothing)
+        {
+            UpdateTransformsSmooth(targetTransforms, playbackTime);
+        }
+        else
+        {
+            UpdateTransforms(targetTransforms, (int)playbackTime);
+        }
     }
 
     /// <summary>
-    /// Apply current animation frame transformation data to target transform
+    /// Apply smoothed value between previous and current animation frame transformation data to target transform
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateTransforms(Transform[] transforms, float playbackTime)
+    private void UpdateTransforms(List<Transform> transforms, int frameId)
     {
-        int trackCount = currentClip.TrackCount;
+        BakedAnimTrack track;
+        Transform transform;
+
+        for (int i = 0; i < trackCount; i++)
+        {
+            track = tracks[i];
+            transform = transforms[i];
+
+            int idx = frameId + track.FrameOffset;
+
+            TransformationFlags flags = track.Flags;
+
+            if ((flags & TransformationFlags.Position) != 0)
+            {
+                transform.localPosition = positions[idx];
+            }
+            if ((flags & TransformationFlags.Rotation) != 0)
+            {
+                transform.localRotation = rotations[idx];
+            }
+            if ((flags & TransformationFlags.Scale) != 0)
+            {
+                transform.localScale = scales[idx];
+            }
+        }
+    }
+    /// <summary>
+    /// Apply smoothed value between previous and current animation frame transformation data to target transform
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void UpdateTransformsSmooth(List<Transform> transforms, float playbackTime)
+    {
         int frameId = (int)playbackTime;
 
         bool passedLastAnimFrame = playbackTime >= currentClip.FrameCount - 1;
@@ -137,22 +200,7 @@ public class CustomAnimator : MonoBehaviour
         for (int i = 0; i < trackCount; i++)
         {
             track = tracks[i];
-
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            //Remove TransformId
-            transform = transforms[track.TransformId];
+            transform = transforms[i];
 
             int idx = frameId + track.FrameOffset;
             int idxB = passedLastAnimFrame ? track.FrameOffset : idx + 1;

@@ -16,9 +16,10 @@ public struct BakedAnimClip
     [field: SerializeField] public float FrameDuration { get; private set; }
     [field: SerializeField] public int FrameCount { get; private set; }
 
+    [field: SerializeField] public bool DoLerpSmoothing { get; private set; }
 
 
-    public BakedAnimClip(BakedAnimTrack[] tracks, Vector3[] positions, Quaternion[] rotations, Vector3[] scales, float frameDuration, int frameCount)
+    public BakedAnimClip(BakedAnimTrack[] tracks, Vector3[] positions, Quaternion[] rotations, Vector3[] scales, float frameDuration, int frameCount, bool doLerpSmoothing)
     {
         Tracks = tracks;
         TrackCount = tracks.Length;
@@ -29,63 +30,7 @@ public struct BakedAnimClip
 
         FrameDuration = frameDuration;
         FrameCount = frameCount;
-    }
 
-    /// <summary>
-    /// Apply current animation frame transformation data to target transform
-    /// </summary>
-    public readonly void ApplyToTargetTransforms(Transform[] transforms, float playbackTime)
-    {
-        int trackCount = TrackCount;
-        int frameId = (int)playbackTime;
-        //bool passedLastAnimFrame = playbackTime >= FrameCount - 1;
-
-        //float t = playbackTime - (int)playbackTime;
-
-        Transform transform;
-
-        Vector3 pos = default;
-        Quaternion rot = default;
-
-        for (int i = 0; i < trackCount; i++)
-        {
-            BakedAnimTrack track = Tracks[i];
-            transform = transforms[track.TransformId];
-
-            int offset = track.FrameOffset;
-            int idxA = frameId + offset;
-            //int idxB = passedLastAnimFrame ? offset : idxA + 1;
-
-            TransformationFlags flags = track.Flags;
-
-            bool hasPos = (flags & TransformationFlags.Position) != 0;
-            bool hasRot = (flags & TransformationFlags.Rotation) != 0;
-            bool hasScale = (flags & TransformationFlags.Scale) != 0;
-
-            if (hasPos)
-                //pos = Lerp(positions[idxA], positions[idxB], t);
-                pos = Positions[idxA];
-
-            if (hasRot)
-                //rot = Lerp(rotations[idxA], rotations[idxB], t);
-                rot = Rotations[idxA];
-
-            if (hasScale)
-                //transform.localScale = Lerp(scales[idxA], scales[idxB], t);
-                transform.localScale = Scales[idxA];
-
-            if (hasPos && hasRot)
-            {
-                transform.SetLocalPositionAndRotation(pos, rot);
-            }
-            else if (hasPos)
-            {
-                transform.localPosition = pos;
-            }
-            else if (hasRot)
-            {
-                transform.localRotation = rot;
-            }
-        }
+        DoLerpSmoothing = doLerpSmoothing;
     }
 }
